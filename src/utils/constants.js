@@ -40,3 +40,4 @@ export const TICKET_STATUS = {
   RESOLVED: 'Resolved',
   CLOSED: 'Closed',
 }
+

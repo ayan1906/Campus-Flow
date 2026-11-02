@@ -5,3 +5,4 @@ export const store = configureStore({
     // Slices will be registered here as features are built
   },
 })
+
