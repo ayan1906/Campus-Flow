@@ -152,3 +152,4 @@ export function Footer() {
     </footer>
   )
 }
+

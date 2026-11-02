@@ -155,7 +155,14 @@ export function LandingPage() {
                 Access Student Portal
               </Button>
             </Link>
-            <a href="#features" className="w-full sm:w-auto">
+            <Link
+              to="/#features"
+              onClick={() => {
+                const el = document.getElementById('features')
+                if (el) el.scrollIntoView({ behavior: 'smooth' })
+              }}
+              className="w-full sm:w-auto"
+            >
               <Button
                 variant="secondary"
                 size="lg"
@@ -163,7 +170,7 @@ export function LandingPage() {
               >
                 Explore Campus Modules
               </Button>
-            </a>
+            </Link>
           </div>
 
           {/* Micro Trust Indicators */}
@@ -553,3 +560,4 @@ export function LandingPage() {
     </div>
   )
 }
+
