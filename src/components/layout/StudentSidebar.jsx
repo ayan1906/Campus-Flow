@@ -1,4 +1,5 @@
 import { NavLink, Link } from 'react-router-dom'
+import { useSelector } from 'react-redux'
 import {
   LayoutDashboard,
   Bell,
@@ -17,6 +18,11 @@ import {
 } from 'lucide-react'
 
 export function StudentSidebar({ isOpen, onClose }) {
+  const { profile } = useSelector((state) => state.auth)
+  const deptCode = profile?.department?.code || 'CSE'
+  const semester = profile?.semester || 'Sem 6'
+  const studentId = profile?.student_id || '2026-CSE-1049'
+
   const navItems = [
     { label: 'Overview', to: '/student/dashboard', icon: LayoutDashboard },
     { label: 'All Notices', to: '/student/notices', icon: Bell },
@@ -107,13 +113,13 @@ export function StudentSidebar({ isOpen, onClose }) {
         <div className="p-3 border-t border-edge shrink-0 space-y-2">
           <div className="p-2.5 rounded-xl bg-surface-secondary/80 border border-edge">
             <div className="flex items-center justify-between text-[11px] font-semibold text-txt-main">
-              <span>Dept of CSE</span>
+              <span>Dept of {deptCode}</span>
               <span className="text-[10px] px-1.5 py-0.2 rounded bg-brand/10 text-brand">
-                Sem 6
+                {semester}
               </span>
             </div>
             <div className="text-[10px] text-txt-muted mt-0.5 font-mono">
-              ID: 2026-CSE-1049
+              ID: {studentId}
             </div>
           </div>
 

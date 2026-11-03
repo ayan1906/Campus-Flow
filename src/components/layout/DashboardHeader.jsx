@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useDispatch, useSelector } from 'react-redux'
 import {
   Menu,
   Search,
@@ -9,7 +10,11 @@ import {
   Settings,
   LogOut,
   Sparkles,
+  Shield,
+  GraduationCap,
 } from 'lucide-react'
+import toast from 'react-hot-toast'
+import { logoutUser, setDemoRole } from '../../features/auth/authSlice'
 import { ThemeToggle } from '../common/ThemeToggle'
 import { Avatar } from '../ui/Avatar'
 import { Badge } from '../ui/Badge'
@@ -17,6 +22,15 @@ import { Badge } from '../ui/Badge'
 export function DashboardHeader({ onMenuClick, userRole = 'student' }) {
   const [userDropdownOpen, setUserDropdownOpen] = useState(false)
   const location = useLocation()
+  const navigate = useNavigate()
+  const dispatch = useDispatch()
+
+  const { user, profile, role } = useSelector((state) => state.auth)
+
+  const activeRole = role || userRole
+  const isAdmin = activeRole === 'admin'
+  const displayName = profile?.full_name || user?.email?.split('@')[0] || (isAdmin ? 'Campus Admin' : 'Samin Yasar')
+  const displayEmail = profile?.email || user?.email || (isAdmin ? 'admin@campusflow.edu' : 'samin.cse@campusflow.edu')
 
   // Generate dynamic page title from pathname
   const getPageTitle = () => {
@@ -29,7 +43,20 @@ export function DashboardHeader({ onMenuClick, userRole = 'student' }) {
       .join(' ')
   }
 
-  const isAdmin = userRole === 'admin'
+  const handleLogout = async () => {
+    setUserDropdownOpen(false)
+    await dispatch(logoutUser())
+    toast.success('Signed out of campus session.')
+    navigate('/login', { replace: true })
+  }
+
+  const handleToggleRole = () => {
+    const targetRole = isAdmin ? 'student' : 'admin'
+    dispatch(setDemoRole(targetRole))
+    toast.success(`Switched active context to ${targetRole.toUpperCase()}`)
+    navigate(targetRole === 'admin' ? '/admin/dashboard' : '/student/dashboard')
+  }
+
   const profileRoute = isAdmin ? '/admin/settings' : '/student/profile'
   const notificationsRoute = isAdmin ? '/admin/dashboard' : '/student/notifications'
 
@@ -95,16 +122,17 @@ export function DashboardHeader({ onMenuClick, userRole = 'student' }) {
             className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-surface-secondary border border-transparent hover:border-edge transition-colors cursor-pointer select-none"
           >
             <Avatar
-              name={isAdmin ? 'Administrator' : 'Samin Yasar'}
+              name={displayName}
               size="sm"
               status="online"
             />
             <div className="text-left hidden sm:block">
-              <div className="text-xs font-semibold text-txt-main leading-tight">
-                {isAdmin ? 'Campus Admin' : 'Samin Yasar'}
+              <div className="text-xs font-semibold text-txt-main leading-tight truncate max-w-[130px]">
+                {displayName}
               </div>
-              <div className="text-[10px] text-txt-muted capitalize">
-                {userRole}
+              <div className="text-[10px] text-txt-muted capitalize flex items-center gap-1">
+                <span>{activeRole}</span>
+                <span className="text-brand">• Active</span>
               </div>
             </div>
             <ChevronDown className="w-3.5 h-3.5 text-txt-muted hidden sm:block" />
@@ -113,15 +141,20 @@ export function DashboardHeader({ onMenuClick, userRole = 'student' }) {
           {/* Dropdown Menu */}
           {userDropdownOpen && (
             <div
-              className="absolute right-0 mt-2 w-48 bg-surface border border-edge rounded-xl shadow-lg p-1.5 z-50 animate-in fade-in zoom-in-95 duration-100"
+              className="absolute right-0 mt-2 w-56 bg-surface border border-edge rounded-xl shadow-lg p-1.5 z-50 animate-in fade-in zoom-in-95 duration-100"
               onClick={() => setUserDropdownOpen(false)}
             >
               <div className="px-3 py-2 border-b border-edge mb-1">
-                <div className="text-xs font-semibold text-txt-main">
-                  {isAdmin ? 'System Administrator' : 'Samin Yasar'}
+                <div className="text-xs font-semibold text-txt-main truncate">
+                  {displayName}
                 </div>
-                <div className="text-[11px] text-txt-muted">
-                  {isAdmin ? 'admin@campusflow.edu' : 'samin.cse@campusflow.edu'}
+                <div className="text-[11px] text-txt-muted truncate">
+                  {displayEmail}
+                </div>
+                <div className="mt-1">
+                  <Badge variant={isAdmin ? 'brand' : 'approved'} size="sm">
+                    {isAdmin ? 'System Administrator' : 'Enrolled Student'}
+                  </Badge>
                 </div>
               </div>
 
@@ -141,15 +174,30 @@ export function DashboardHeader({ onMenuClick, userRole = 'student' }) {
                 <span>Account Settings</span>
               </Link>
 
+              <button
+                type="button"
+                onClick={handleToggleRole}
+                className="w-full flex items-center justify-between px-3 py-2 text-xs font-medium text-brand hover:bg-brand/10 rounded-lg transition-colors cursor-pointer"
+              >
+                <span className="flex items-center gap-2">
+                  <Shield className="w-4 h-4" />
+                  <span>Switch to {isAdmin ? 'Student' : 'Admin'}</span>
+                </span>
+                <span className="text-[10px] px-1.5 py-0.2 bg-brand/20 rounded font-mono">
+                  DEV
+                </span>
+              </button>
+
               <div className="my-1 border-t border-edge" />
 
-              <Link
-                to="/"
-                className="flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-danger-main hover:bg-danger-main/10 rounded-lg transition-colors"
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-danger-main hover:bg-danger-main/10 rounded-lg transition-colors cursor-pointer"
               >
                 <LogOut className="w-4 h-4" />
-                <span>Log Out</span>
-              </Link>
+                <span>Sign Out</span>
+              </button>
             </div>
           )}
         </div>
@@ -157,4 +205,3 @@ export function DashboardHeader({ onMenuClick, userRole = 'student' }) {
     </header>
   )
 }
-

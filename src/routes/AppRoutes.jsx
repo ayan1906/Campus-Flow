@@ -1,6 +1,7 @@
 import { Routes, Route, Link } from 'react-router-dom'
 import { AlertCircle } from 'lucide-react'
 import { Button } from '../components/ui/Button'
+import { ProtectedRoute, PublicOnlyRoute } from './ProtectedRoute'
 
 // Layouts
 import { PublicLayout } from '../components/layout/PublicLayout'
@@ -84,13 +85,43 @@ export function AppRoutes() {
         <Route path="/about" element={<AboutPage />} />
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/design-system" element={<DesignSystemPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+
+        {/* Public-only Auth Pages (Redirects if already signed in) */}
+        <Route
+          path="/login"
+          element={
+            <PublicOnlyRoute>
+              <LoginPage />
+            </PublicOnlyRoute>
+          }
+        />
+        <Route
+          path="/register"
+          element={
+            <PublicOnlyRoute>
+              <RegisterPage />
+            </PublicOnlyRoute>
+          }
+        />
+        <Route
+          path="/forgot-password"
+          element={
+            <PublicOnlyRoute>
+              <ForgotPasswordPage />
+            </PublicOnlyRoute>
+          }
+        />
       </Route>
 
-      {/* 2. STUDENT PORTAL ROUTES */}
-      <Route path="/student" element={<StudentLayout />}>
+      {/* 2. STUDENT PORTAL ROUTES (Protected: Student, Admin, Teacher) */}
+      <Route
+        path="/student"
+        element={
+          <ProtectedRoute allowedRoles={['student', 'admin', 'teacher']}>
+            <StudentLayout />
+          </ProtectedRoute>
+        }
+      >
         <Route index element={<StudentDashboard />} />
         <Route path="dashboard" element={<StudentDashboard />} />
         <Route path="notices" element={<NoticesPage />} />
@@ -108,8 +139,15 @@ export function AppRoutes() {
         <Route path="settings" element={<SettingsPage />} />
       </Route>
 
-      {/* 3. ADMIN CONSOLE ROUTES */}
-      <Route path="/admin" element={<AdminLayout />}>
+      {/* 3. ADMIN CONSOLE ROUTES (Protected: Admin Only!) */}
+      <Route
+        path="/admin"
+        element={
+          <ProtectedRoute allowedRoles={['admin']}>
+            <AdminLayout />
+          </ProtectedRoute>
+        }
+      >
         <Route index element={<AdminDashboard />} />
         <Route path="dashboard" element={<AdminDashboard />} />
         <Route path="students" element={<StudentsPage />} />
@@ -133,4 +171,3 @@ export function AppRoutes() {
     </Routes>
   )
 }
-

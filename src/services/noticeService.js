@@ -160,3 +160,4 @@ export const noticeService = {
     return Boolean(data)
   },
 }
+

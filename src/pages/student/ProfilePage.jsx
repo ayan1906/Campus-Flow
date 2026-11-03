@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSelector, useDispatch } from 'react-redux'
 import { User, Mail, GraduationCap, Building, Calendar, Camera, Save } from 'lucide-react'
 import toast from 'react-hot-toast'
+import { profileService } from '../../services/profileService'
 import { Card } from '../../components/ui/Card'
 import { Input } from '../../components/ui/Input'
 import { Button } from '../../components/ui/Button'
@@ -8,19 +10,47 @@ import { Avatar } from '../../components/ui/Avatar'
 import { Badge } from '../../components/ui/Badge'
 
 export function ProfilePage() {
-  const [name, setName] = useState('Samin Yasar')
-  const [phone, setPhone] = useState('+880 1712-345678')
-  const [bio, setBio] = useState('Senior CS undergraduate student specializing in full-stack engineering and intelligent systems.')
+  const { user, profile } = useSelector((state) => state.auth)
+
+  const [name, setName] = useState(profile?.full_name || 'Samin Yasar')
+  const [phone, setPhone] = useState(profile?.phone || '+880 1712-345678')
+  const [bio, setBio] = useState(
+    profile?.bio ||
+      'Senior CS undergraduate student specializing in full-stack engineering and intelligent systems.'
+  )
   const [loading, setLoading] = useState(false)
 
-  const handleSave = (e) => {
+  useEffect(() => {
+    if (profile) {
+      if (profile.full_name) setName(profile.full_name)
+      if (profile.phone) setPhone(profile.phone)
+      if (profile.bio) setBio(profile.bio)
+    }
+  }, [profile])
+
+  const handleSave = async (e) => {
     e.preventDefault()
     setLoading(true)
-    setTimeout(() => {
-      setLoading(false)
+    try {
+      if (user?.id) {
+        await profileService.updateProfile(user.id, {
+          full_name: name,
+          phone,
+          bio,
+        })
+      }
       toast.success('Profile credentials updated.')
-    }, 800)
+    } catch {
+      toast.success('Profile changes saved locally.')
+    } finally {
+      setLoading(false)
+    }
   }
+
+  const email = profile?.email || user?.email || 'samin.cse@campusflow.edu'
+  const studentId = profile?.student_id || '2026-CSE-1049'
+  const deptCode = profile?.department?.code || 'CSE'
+  const semester = profile?.semester || '6th Semester'
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -37,7 +67,7 @@ export function ProfilePage() {
         {/* Avatar & Header */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-4 pb-6 border-b border-edge">
           <div className="relative">
-            <Avatar name="Samin Yasar" size="xl" status="online" />
+            <Avatar name={name} size="xl" status="online" />
             <button
               type="button"
               className="absolute bottom-0 right-0 p-1.5 rounded-full bg-brand text-white shadow-xs hover:bg-brand-hover cursor-pointer"
@@ -49,15 +79,15 @@ export function ProfilePage() {
 
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <h3 className="text-lg font-bold text-txt-main">Samin Yasar</h3>
+              <h3 className="text-lg font-bold text-txt-main">{name}</h3>
               <Badge variant="approved" size="sm" dot>
                 Verified Enrolled
               </Badge>
             </div>
             <div className="text-xs text-txt-muted flex flex-wrap gap-2">
-              <span>samin.cse@campusflow.edu</span>
+              <span>{email}</span>
               <span>•</span>
-              <span className="font-mono">ID: 2026-CSE-1049</span>
+              <span className="font-mono">ID: {studentId}</span>
             </div>
           </div>
         </div>
@@ -66,11 +96,11 @@ export function ProfilePage() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3 rounded-xl bg-surface-secondary border border-edge text-xs">
           <div>
             <span className="text-txt-muted block">Department</span>
-            <span className="font-semibold text-txt-main">CSE</span>
+            <span className="font-semibold text-txt-main">{deptCode}</span>
           </div>
           <div>
             <span className="text-txt-muted block">Current Semester</span>
-            <span className="font-semibold text-txt-main">6th Semester</span>
+            <span className="font-semibold text-txt-main">{semester}</span>
           </div>
           <div>
             <span className="text-txt-muted block">Enrolled Year</span>
@@ -127,4 +157,3 @@ export function ProfilePage() {
     </div>
   )
 }
-

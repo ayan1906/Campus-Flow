@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { useSelector } from 'react-redux'
 import {
   Bell,
   Calendar,
@@ -16,6 +17,11 @@ import { Button } from '../../components/ui/Button'
 import { Badge } from '../../components/ui/Badge'
 
 export function StudentDashboard() {
+  const { profile, user } = useSelector((state) => state.auth)
+  const studentName = profile?.full_name || user?.email?.split('@')[0] || 'Samin'
+  const studentId = profile?.student_id || '2026-CSE-1049'
+  const semester = profile?.semester || '6th Semester'
+  const deptName = profile?.department?.name || 'Computer Science & Engineering'
   const quickStats = [
     { label: 'Unread Notices', value: '3', badge: 'New today', icon: Bell, color: 'text-brand' },
     { label: 'Registered Events', value: '2', badge: 'Next: Friday', icon: Calendar, color: 'text-emerald-500' },
@@ -30,13 +36,13 @@ export function StudentDashboard() {
         <div className="space-y-1">
           <div className="inline-flex items-center gap-1.5 text-xs text-brand font-semibold">
             <Sparkles className="w-3.5 h-3.5" />
-            <span>Welcome back, Samin</span>
+            <span>Welcome back, {studentName}</span>
           </div>
           <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-txt-main">
             Student Portal Overview
           </h2>
           <p className="text-xs text-txt-secondary">
-            B.Sc. in Computer Science & Engineering • 6th Semester • ID: 2026-CSE-1049
+            {deptName} • {semester} • ID: {studentId}
           </p>
         </div>
 

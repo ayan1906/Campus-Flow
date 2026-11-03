@@ -583,3 +583,4 @@ create policy "Users can update or delete their uploaded media"
   on storage.objects for delete
   to authenticated
   using (auth.uid() = owner or public.is_admin());
+

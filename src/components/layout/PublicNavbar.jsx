@@ -1,21 +1,29 @@
 import { useState, useEffect } from 'react'
-import { Link, NavLink, useLocation } from 'react-router-dom'
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom'
+import { useSelector, useDispatch } from 'react-redux'
 import {
   Layers,
   Menu,
   X,
   ArrowRight,
-  Sparkles,
   LogIn,
-  GraduationCap,
+  LogOut,
+  User,
+  Shield,
 } from 'lucide-react'
+import { logoutUser } from '../../features/auth/authSlice'
 import { Button } from '../ui/Button'
+import { Avatar } from '../ui/Avatar'
 import { ThemeToggle } from '../common/ThemeToggle'
 
 export function PublicNavbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
   const location = useLocation()
+  const navigate = useNavigate()
+  const dispatch = useDispatch()
+
+  const { isAuthenticated, role, profile, user } = useSelector((state) => state.auth)
 
   // Track scroll position for subtle border/shadow effect
   useEffect(() => {
@@ -37,6 +45,14 @@ export function PublicNavbar() {
       elem.scrollIntoView({ behavior: 'smooth' })
     }
   }
+
+  const handleLogout = async () => {
+    await dispatch(logoutUser())
+    navigate('/login')
+  }
+
+  const portalRoute = role === 'admin' ? '/admin/dashboard' : '/student/dashboard'
+  const displayName = profile?.full_name || user?.email?.split('@')[0] || 'My Account'
 
   return (
     <header
@@ -135,22 +151,47 @@ export function PublicNavbar() {
         <div className="hidden sm:flex items-center gap-3">
           <ThemeToggle />
 
-          <Link to="/login">
-            <Button variant="ghost" size="sm" leftIcon={LogIn}>
-              Sign In
-            </Button>
-          </Link>
-
-          <Link to="/student/dashboard">
-            <Button
-              variant="primary"
-              size="sm"
-              rightIcon={ArrowRight}
-              className="shadow-xs"
-            >
-              Student Portal
-            </Button>
-          </Link>
+          {isAuthenticated ? (
+            <div className="flex items-center gap-2.5">
+              <Link to={portalRoute}>
+                <Button
+                  variant="primary"
+                  size="sm"
+                  rightIcon={ArrowRight}
+                  className="shadow-xs"
+                >
+                  Enter {role === 'admin' ? 'Admin Console' : 'Dashboard'}
+                </Button>
+              </Link>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={handleLogout}
+                aria-label="Sign out"
+                title="Sign Out"
+              >
+                <LogOut className="w-4 h-4 text-danger-main" />
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2.5">
+              <Link to="/login">
+                <Button variant="ghost" size="sm" leftIcon={LogIn}>
+                  Sign In
+                </Button>
+              </Link>
+              <Link to="/register">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  rightIcon={ArrowRight}
+                  className="shadow-xs"
+                >
+                  Student Portal
+                </Button>
+              </Link>
+            </div>
+          )}
         </div>
 
         {/* Mobile Hamburger & Theme Toggle */}
@@ -219,21 +260,41 @@ export function PublicNavbar() {
           </nav>
 
           <div className="pt-3 border-t border-edge flex flex-col gap-2.5">
-            <Link to="/login" className="w-full">
-              <Button variant="secondary" size="md" className="w-full justify-center">
-                Sign In to Account
-              </Button>
-            </Link>
-            <Link to="/student/dashboard" className="w-full">
-              <Button
-                variant="primary"
-                size="md"
-                rightIcon={ArrowRight}
-                className="w-full justify-center"
-              >
-                Access Student Portal
-              </Button>
-            </Link>
+            {isAuthenticated ? (
+              <>
+                <Link to={portalRoute} className="w-full">
+                  <Button variant="primary" size="md" className="w-full justify-center">
+                    Enter {role === 'admin' ? 'Admin Console' : 'Student Portal'}
+                  </Button>
+                </Link>
+                <Button
+                  variant="secondary"
+                  size="md"
+                  onClick={handleLogout}
+                  className="w-full justify-center text-danger-main"
+                >
+                  Sign Out
+                </Button>
+              </>
+            ) : (
+              <>
+                <Link to="/login" className="w-full">
+                  <Button variant="secondary" size="md" className="w-full justify-center">
+                    Sign In to Account
+                  </Button>
+                </Link>
+                <Link to="/register" className="w-full">
+                  <Button
+                    variant="primary"
+                    size="md"
+                    rightIcon={ArrowRight}
+                    className="w-full justify-center"
+                  >
+                    Access Student Portal
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       )}
