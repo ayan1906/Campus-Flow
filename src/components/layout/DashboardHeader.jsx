@@ -157,3 +157,4 @@ export function DashboardHeader({ onMenuClick, userRole = 'student' }) {
     </header>
   )
 }
+

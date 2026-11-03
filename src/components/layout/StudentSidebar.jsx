@@ -132,3 +132,4 @@ export function StudentSidebar({ isOpen, onClose }) {
     </>
   )
 }
+
