@@ -59,15 +59,16 @@ export function LoginPage() {
     }
   }
 
-  // Helper to fill demo credentials for quick evaluation
-  const handleQuickDemo = (role) => {
-    if (role === 'student') {
-      setValue('email', 'student@campusflow.edu')
-      setValue('password', 'student123')
-    } else {
-      setValue('email', 'admin@campusflow.edu')
-      setValue('password', 'admin123')
-    }
+  // Helper to fill demo credentials and immediately sign in
+  const handleQuickDemo = async (role) => {
+    const creds =
+      role === 'student'
+        ? { email: 'student@campusflow.edu', password: 'student123' }
+        : { email: 'admin@campusflow.edu', password: 'admin123' }
+
+    setValue('email', creds.email)
+    setValue('password', creds.password)
+    await onSubmit(creds)
   }
 
   return (

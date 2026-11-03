@@ -48,8 +48,15 @@ export function RegisterPage() {
       )
 
       if (registerUser.fulfilled.match(resultAction)) {
-        toast.success(resultAction.payload.message || 'Account registered successfully!')
-        navigate('/student/dashboard', { replace: true })
+        toast.success(resultAction.payload.message || 'Account registered successfully!', {
+          duration: 5000,
+        })
+        if (resultAction.payload.session) {
+          navigate('/student/dashboard', { replace: true })
+        } else {
+          // If Supabase has email confirmation enabled or no session returned yet
+          navigate('/login', { replace: true })
+        }
       } else {
         toast.error(resultAction.payload || 'Registration could not be completed.')
       }

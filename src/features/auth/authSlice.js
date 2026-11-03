@@ -37,47 +37,53 @@ export const initializeAuth = createAsyncThunk(
   'auth/initializeAuth',
   async (_, { rejectWithValue }) => {
     try {
-      // 1. If Supabase is connected with real credentials
+      // 1. If Supabase is connected with real credentials, inspect active Supabase session
       if (isSupabaseConfigured()) {
-        const session = await authService.getSession()
-        if (!session?.user) {
-          return { user: null, profile: null, session: null, role: null }
-        }
-
         try {
-          const profile = await profileService.getProfile(session.user.id)
-          return {
-            user: session.user,
-            profile,
-            session,
-            role: profile?.role || 'student',
+          const session = await authService.getSession()
+          if (session?.user) {
+            try {
+              const profile = await profileService.getProfile(session.user.id)
+              return {
+                user: session.user,
+                profile,
+                session,
+                role: profile?.role || 'student',
+              }
+            } catch {
+              // If profile table row not found yet, default from user metadata
+              const role = session.user.user_metadata?.role || 'student'
+              return {
+                user: session.user,
+                profile: {
+                  id: session.user.id,
+                  email: session.user.email,
+                  full_name: session.user.user_metadata?.full_name || 'Campus Student',
+                  role,
+                },
+                session,
+                role,
+              }
+            }
           }
-        } catch {
-          // If profile table row not found yet, default from user metadata
-          const role = session.user.user_metadata?.role || 'student'
-          return {
-            user: session.user,
-            profile: {
-              id: session.user.id,
-              email: session.user.email,
-              full_name: session.user.user_metadata?.full_name || 'Campus Student',
-              role,
-            },
-            session,
-            role,
-          }
+        } catch (e) {
+          console.warn('Supabase getSession failed, checking local demo session:', e)
         }
       }
 
-      // 2. Check for demo session if Supabase is in placeholder mode
+      // 2. Check for active demo session saved in localStorage
       const savedDemo = localStorage.getItem(DEMO_STORAGE_KEY)
       if (savedDemo) {
-        const parsed = JSON.parse(savedDemo)
-        return {
-          user: { id: parsed.id, email: parsed.email },
-          profile: parsed,
-          session: { access_token: 'demo-token' },
-          role: parsed.role,
+        try {
+          const parsed = JSON.parse(savedDemo)
+          return {
+            user: { id: parsed.id, email: parsed.email },
+            profile: parsed,
+            session: { access_token: 'demo-token' },
+            role: parsed.role,
+          }
+        } catch {
+          localStorage.removeItem(DEMO_STORAGE_KEY)
         }
       }
 
@@ -97,29 +103,60 @@ export const loginUser = createAsyncThunk(
     try {
       const cleanEmail = email.trim().toLowerCase()
 
-      // Real Supabase Auth Flow
+      // 1. Real Supabase Auth Flow (when project credentials are configured in .env)
       if (isSupabaseConfigured()) {
-        const { user, session } = await authService.signIn({ email: cleanEmail, password })
-        let profile = null
         try {
-          profile = await profileService.getProfile(user.id)
-        } catch {
-          profile = {
-            id: user.id,
-            email: user.email,
-            full_name: user.user_metadata?.full_name || 'Campus Student',
-            role: user.user_metadata?.role || 'student',
+          const { user, session } = await authService.signIn({ email: cleanEmail, password })
+          let profile = null
+          try {
+            profile = await profileService.getProfile(user.id)
+          } catch {
+            profile = {
+              id: user.id,
+              email: user.email,
+              full_name: user.user_metadata?.full_name || 'Campus Student',
+              role: user.user_metadata?.role || 'student',
+            }
           }
-        }
-        return {
-          user,
-          profile,
-          session,
-          role: profile?.role || 'student',
+          // Clear any old demo session since real login succeeded
+          localStorage.removeItem(DEMO_STORAGE_KEY)
+          return {
+            user,
+            profile,
+            session,
+            role: profile?.role || 'student',
+          }
+        } catch (supaErr) {
+          // If the user tried logging in with one of our pre-configured demo credentials,
+          // seamlessly fall back to the built-in demo session even with Supabase configured!
+          const demoAccount = DEMO_ACCOUNTS[cleanEmail]
+          if (demoAccount) {
+            localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(demoAccount))
+            return {
+              user: { id: demoAccount.id, email: demoAccount.email },
+              profile: demoAccount,
+              session: { access_token: 'demo-token' },
+              role: demoAccount.role,
+            }
+          }
+
+          // Format helpful error messages for real accounts
+          const msg = supaErr.message || ''
+          if (msg.includes('Invalid login credentials')) {
+            throw new Error(
+              'Invalid login credentials. If you haven’t created an account yet, please click "Create an account" below, or click the Quick Demo buttons above to test immediately.'
+            )
+          }
+          if (msg.includes('Email not confirmed')) {
+            throw new Error(
+              'Please verify your email address before logging in, or disable "Confirm email" in your Supabase Auth dashboard.'
+            )
+          }
+          throw supaErr
         }
       }
 
-      // Fallback / Demo Credentials check when keys not configured
+      // 2. Demo fallback when Supabase is not configured
       const demoAccount = DEMO_ACCOUNTS[cleanEmail]
       if (demoAccount && password.length >= 6) {
         localStorage.setItem(DEMO_STORAGE_KEY, JSON.stringify(demoAccount))
@@ -180,12 +217,31 @@ export const registerUser = createAsyncThunk(
           departmentId,
           semester,
         })
+
+        let profile = null
+        if (data.session && data.user) {
+          try {
+            profile = await profileService.getProfile(data.user.id)
+          } catch {
+            profile = {
+              id: data.user.id,
+              email: data.user.email,
+              full_name: fullName,
+              role: 'student',
+              student_id: studentId,
+              semester,
+            }
+          }
+        }
+
         return {
           user: data.user,
+          profile,
           session: data.session,
+          role: 'student',
           message: data.session
             ? 'Account created and signed in successfully!'
-            : 'Registration received! Please verify your institutional email address.',
+            : 'Registration received! Please check your email inbox to confirm your account (or disable email confirmation in Supabase).',
         }
       }
 
@@ -337,3 +393,4 @@ export const authSlice = createSlice({
 
 export const { clearAuthError, setDemoRole } = authSlice.actions
 export default authSlice.reducer
+

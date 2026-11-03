@@ -272,7 +272,11 @@ begin
     new.raw_user_meta_data->>'student_id',
     case
       when new.raw_user_meta_data->>'department_id' is not null and new.raw_user_meta_data->>'department_id' ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
-      then (new.raw_user_meta_data->>'department_id')::uuid
+      then (
+        select d.id from public.departments d
+        where d.id = (new.raw_user_meta_data->>'department_id')::uuid
+        limit 1
+      )
       else null
     end,
     new.raw_user_meta_data->>'semester'
